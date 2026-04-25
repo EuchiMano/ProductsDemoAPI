@@ -1,0 +1,6 @@
+@NewProjectFromScratch_HostAddress = http://localhost:5140
+
+GET {{NewProjectFromScratch_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

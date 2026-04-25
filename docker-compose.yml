@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: newproject_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"      # AMQP port
+      - "15672:15672"    # Management UI port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - newproject_network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: newproject_api
+    ports:
+      - "5140:5140"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5140
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__Username: guest
+      RabbitMq__Password: guest
+      RabbitMq__ExchangeName: products.exchange
+      Jwt__Key: ThisIsASecretKeyForTestingAtLeast32Chars
+      Jwt__Issuer: NewProjectFromScratch
+      Jwt__Audience: NewProjectFromScratchUsers
+      Jwt__ExpiryMinutes: 60
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - newproject_network
+
+volumes:
+  rabbitmq_data:
+
+networks:
+  newproject_network:
+    driver: bridge
