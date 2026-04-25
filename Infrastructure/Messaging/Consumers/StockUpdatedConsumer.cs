@@ -96,9 +96,27 @@ namespace NewProjectFromScratch.Infrastructure.Messaging.Consumers
             _connection = await factory.CreateConnectionAsync();
             _channel = await _connection.CreateChannelAsync();
 
-            // basicQos — procesar un mensaje a la vez
-            await _channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false);
+            await _channel.ExchangeDeclareAsync(
+                exchange: _settings.ExchangeName,
+                type: ExchangeType.Topic,
+                durable: true,
+                autoDelete: false
+            );
 
+            await _channel.QueueDeclareAsync(
+                queue: QueueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false
+            );
+
+            await _channel.QueueBindAsync(
+                queue: QueueName,
+                exchange: _settings.ExchangeName,
+                routingKey: "product.stock.#"
+            );
+
+            await _channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false);
             _logger.LogInformation("StockUpdatedConsumer iniciado, escuchando en '{Queue}'", QueueName);
         }
 
